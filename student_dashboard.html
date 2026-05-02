@@ -1,0 +1,183 @@
+{% extends 'student_base.html' %}
+{% block page_title %}My Dashboard{% endblock %}
+{% block content %}
+
+<!-- Welcome Banner -->
+<div class="hero-banner mb-4">
+  <div class="hero-img">🎓</div>
+  <div class="hero-text">
+    <h2>Hello, {{ student.name }} 👋</h2>
+    <p>USN: <strong style="color:#a78bfa">{{ student.usn | upper }}</strong> &nbsp;·&nbsp;
+       {{ student.course }} &nbsp;·&nbsp; Year {{ student.year }}</p>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="hero-stat-val">{{ paid_count }}</div>
+      <div class="hero-stat-label">Fees Paid</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-val">{{ open_complaints }}</div>
+      <div class="hero-stat-label">Open Issues</div>
+    </div>
+  </div>
+</div>
+
+<!-- Stat cards -->
+<div class="stats-grid mb-4" style="grid-template-columns:repeat(3,1fr)">
+  <div class="stat-card teal">
+    <div class="stat-icon-wrap">✅</div>
+    <div class="stat-val">{{ paid_count }}</div>
+    <div class="stat-label">Fees Paid</div>
+  </div>
+  <div class="stat-card orange">
+    <div class="stat-icon-wrap">⏳</div>
+    <div class="stat-val">{{ pending_count }}</div>
+    <div class="stat-label">Fees Pending</div>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-icon-wrap">🚨</div>
+    <div class="stat-val">{{ overdue_count }}</div>
+    <div class="stat-label">Fees Overdue</div>
+  </div>
+</div>
+
+<!-- Room Info -->
+<div class="panel mb-4">
+  <div class="panel-header">
+    <div class="panel-title">🚪 My Room</div>
+  </div>
+  <div class="p-4">
+    {% if student.room_number %}
+    <div class="d-flex align-items-center gap-4">
+      <div style="width:80px;height:80px;border-radius:16px;background:linear-gradient(135deg,rgba(108,99,255,0.2),rgba(34,211,176,0.1));display:flex;align-items:center;justify-content:center;font-size:36px;border:1px solid rgba(108,99,255,0.3)">🚪</div>
+      <div>
+        <div style="font-family:'Sora',sans-serif;font-size:28px;font-weight:700">Room {{ student.room_number }}</div>
+        <div style="color:var(--muted);font-size:14px;margin-top:4px">
+          Floor {{ student.floor }} &nbsp;·&nbsp; {{ student.room_type | capitalize }} Room
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="text-center py-3" style="color:var(--muted)">
+      No room assigned yet. Contact the warden.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Fee Records -->
+<div class="panel mb-4">
+  <div class="panel-header">
+    <div class="panel-title">💳 My Fee Records</div>
+  </div>
+  <table class="hms-table">
+    <thead>
+      <tr><th>Type</th><th>Amount</th><th>Due Date</th><th>Paid Date</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      {% for f in fees %}
+      <tr>
+        <td><span class="badge badge-info">{{ f.fee_type }}</span></td>
+        <td style="font-family:'Sora',sans-serif;font-weight:600;color:#22d3b0">₹{{ '{:,.0f}'.format(f.amount) }}</td>
+        <td style="color:var(--muted);font-size:13px">{{ f.due_date }}</td>
+        <td style="color:var(--muted);font-size:13px">{{ f.paid_date if f.paid_date else '—' }}</td>
+        <td>
+          <span class="badge
+            {% if f.status == 'paid' %}badge-success
+            {% elif f.status == 'overdue' %}badge-danger
+            {% else %}badge-warn{% endif %}">
+            {{ f.status | capitalize }}
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+      {% if not fees %}
+      <tr><td colspan="5" class="text-center py-4" style="color:var(--muted)">No fee records found.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Complaints -->
+<div class="panel">
+  <div class="panel-header">
+    <div class="panel-title">📋 My Complaints</div>
+    <button class="panel-action" data-bs-toggle="modal" data-bs-target="#fileComplaintModal">
+      + File New
+    </button>
+  </div>
+  <table class="hms-table">
+    <thead>
+      <tr><th>Category</th><th>Description</th><th>Filed On</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      {% for c in complaints %}
+      <tr>
+        <td>
+          <span class="badge
+            {% if c.category == 'maintenance' %}badge-warn
+            {% elif c.category == 'security' %}badge-danger
+            {% elif c.category == 'food' %}badge-info
+            {% else %}badge-gray{% endif %}">
+            {{ c.category | capitalize }}
+          </span>
+        </td>
+        <td style="font-size:13px;color:#94a3b8;max-width:260px">
+          {{ c.description[:80] }}{% if c.description|length > 80 %}...{% endif %}
+        </td>
+        <td style="font-size:12px;color:var(--muted)">{{ c.filed_on.strftime('%d %b %Y') }}</td>
+        <td>
+          <span class="badge
+            {% if c.status == 'resolved' %}badge-success
+            {% elif c.status == 'in-progress' %}badge-warn
+            {% else %}badge-danger{% endif %}">
+            {{ c.status | capitalize }}
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+      {% if not complaints %}
+      <tr><td colspan="4" class="text-center py-4" style="color:var(--muted)">No complaints filed yet.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+<!-- File Complaint Modal -->
+<div class="modal fade" id="fileComplaintModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">File a Complaint</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="{{ url_for('student_add_complaint') }}" method="POST">
+        <div class="modal-body row g-3">
+          <div class="col-12">
+            <label class="form-label">Category</label>
+            <select name="category" class="form-select">
+              <option value="maintenance">🔧 Maintenance</option>
+              <option value="food">🍽️ Food</option>
+              <option value="security">🔒 Security</option>
+              <option value="other">📋 Other</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-control" rows="4"
+                      placeholder="Describe your issue clearly..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn px-4"
+            style="background:linear-gradient(135deg,#6c63ff,#22d3b0);border:none;border-radius:9px;color:#fff">
+            Submit
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

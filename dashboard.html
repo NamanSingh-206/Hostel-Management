@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+
+<!-- Hero Banner -->
+<div class="hero-banner">
+  <div class="hero-img">🏛️</div>
+  <div class="hero-text">
+    <h2>Welcome back, {{ session.get('warden_name', 'Admin') }} 👋</h2>
+    <p>Here's what's happening at your hostel today. Stay on top of rooms, fees, and student welfare.</p>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="hero-stat-val">{{ total_students }}</div>
+      <div class="hero-stat-label">Students</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-val">{{ available_rooms }}</div>
+      <div class="hero-stat-label">Free Rooms</div>
+    </div>
+  </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="stats-grid">
+  <div class="stat-card blue">
+    <div class="stat-icon-wrap">👥</div>
+    <div class="stat-val">{{ total_students }}</div>
+    <div class="stat-label">Active Students</div>
+  </div>
+  <div class="stat-card teal">
+    <div class="stat-icon-wrap">🚪</div>
+    <div class="stat-val">{{ available_rooms }}</div>
+    <div class="stat-label">Available Rooms</div>
+  </div>
+  <div class="stat-card orange">
+    <div class="stat-icon-wrap">💳</div>
+    <div class="stat-val">{{ pending_fees }}</div>
+    <div class="stat-label">Pending Fees</div>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-icon-wrap">📋</div>
+    <div class="stat-val">{{ open_complaints }}</div>
+    <div class="stat-label">Open Complaints</div>
+  </div>
+</div>
+
+<!-- Recent Students Panel -->
+<div class="panel">
+  <div class="panel-header">
+    <div class="panel-title">Recent Students</div>
+    <a href="{{ url_for('students') }}" class="panel-action">View All →</a>
+  </div>
+  <table class="hms-table">
+    <thead>
+      <tr><th>Student</th><th>Course</th><th>Room</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      {% for s in recent_students %}
+      <tr>
+        <td>
+          <div class="student-info">
+            <div class="student-av" style="background:linear-gradient(135deg,#6c63ff,#22d3b0)">
+              {{ s.name[0] | upper }}
+            </div>
+            <div>
+              <div class="student-name">{{ s.name }}</div>
+              <div class="student-roll">{{ s.roll_number }}</div>
+            </div>
+          </div>
+        </td>
+        <td style="color:var(--muted);font-size:13px">{{ s.course }}</td>
+        <td><span class="room-chip">🚪 {{ s.room_number or '—' }}</span></td>
+        <td><span class="badge badge-success">{{ s.status }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Facilities -->
+<div class="panel">
+  <div class="panel-header">
+    <div class="panel-title">Hostel Facilities</div>
+  </div>
+  <div class="photo-cards">
+    <div class="photo-card">
+      <div class="photo-img hostel">🏛️</div>
+      <div class="photo-card-body">
+        <div class="photo-card-title">Main Building</div>
+        <div class="photo-card-sub">4 floors · 80 rooms · 160 capacity</div>
+      </div>
+    </div>
+    <div class="photo-card">
+      <div class="photo-img dining">🍽️</div>
+      <div class="photo-card-body">
+        <div class="photo-card-title">Dining Hall</div>
+        <div class="photo-card-sub">Breakfast · Lunch · Dinner · Open 7AM–10PM</div>
+      </div>
+    </div>
+    <div class="photo-card">
+      <div class="photo-img sports">⚽</div>
+      <div class="photo-card-body">
+        <div class="photo-card-title">Sports Ground</div>
+        <div class="photo-card-sub">Cricket · Football · Badminton court</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+{% endblock %}

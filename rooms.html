@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% block page_title %}Rooms{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 style="font-family:'Sora',sans-serif;font-weight:700">Room Management</h4>
+  <button class="btn px-4" data-bs-toggle="modal" data-bs-target="#addRoomModal"
+    style="background:linear-gradient(135deg,#6c63ff,#22d3b0);border:none;
+           border-radius:10px;font-weight:500;color:#fff">
+    + Add Room
+  </button>
+</div>
+
+<!-- Room Stats Row -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="panel p-3 d-flex align-items-center gap-3"
+         style="border-left:3px solid #22c55e">
+      <div style="width:44px;height:44px;border-radius:10px;
+                  background:rgba(34,197,94,0.15);display:flex;
+                  align-items:center;justify-content:center;font-size:20px">🟢</div>
+      <div>
+        <div style="font-size:22px;font-weight:700;
+                    font-family:'Sora',sans-serif;color:#22c55e">
+          {{ rooms | selectattr('status','equalto','available') | list | length }}
+        </div>
+        <div style="font-size:12px;color:var(--muted)">Available</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="panel p-3 d-flex align-items-center gap-3"
+         style="border-left:3px solid #ef4444">
+      <div style="width:44px;height:44px;border-radius:10px;
+                  background:rgba(239,68,68,0.15);display:flex;
+                  align-items:center;justify-content:center;font-size:20px">🔴</div>
+      <div>
+        <div style="font-size:22px;font-weight:700;
+                    font-family:'Sora',sans-serif;color:#ef4444">
+          {{ rooms | selectattr('status','equalto','full') | list | length }}
+        </div>
+        <div style="font-size:12px;color:var(--muted)">Full</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="panel p-3 d-flex align-items-center gap-3"
+         style="border-left:3px solid #f59e0b">
+      <div style="width:44px;height:44px;border-radius:10px;
+                  background:rgba(245,158,11,0.15);display:flex;
+                  align-items:center;justify-content:center;font-size:20px">🟡</div>
+      <div>
+        <div style="font-size:22px;font-weight:700;
+                    font-family:'Sora',sans-serif;color:#f59e0b">
+          {{ rooms | selectattr('status','equalto','maintenance') | list | length }}
+        </div>
+        <div style="font-size:12px;color:var(--muted)">Maintenance</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Room Grid -->
+<div class="row g-3">
+  {% for room in rooms %}
+  {% set pct = (room.occupied * 100 // room.capacity) if room.capacity > 0 else 0 %}
+  <div class="col-md-3">
+    <div class="room-tile
+      {% if room.status == 'available' %}avail
+      {% elif room.status == 'full' %}full
+      {% else %}maint{% endif %}">
+
+      <div class="room-status-dot"></div>
+      <div class="room-num">Room {{ room.room_number }}</div>
+      <div class="room-floor">Floor {{ room.floor }}</div>
+
+      <div class="room-bar">
+  <div class="room-bar-fill" data-width="{{ pct }}"></div>
+</div>
+      <div class="room-occ mb-2">
+        {{ room.occupied }} / {{ room.capacity }} occupied
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center mt-2">
+        <span class="badge
+          {% if room.status == 'available' %}badge-success
+          {% elif room.status == 'full' %}badge-danger
+          {% else %}badge-warn{% endif %}">
+          {{ room.status }}
+        </span>
+        <a href="{{ url_for('delete_room', id=room.id) }}"
+           onclick="return confirm('Delete Room {{ room.room_number }}? This cannot be undone.')"
+           style="background:rgba(239,68,68,0.1);color:#ef4444;
+                  border:none;border-radius:7px;padding:4px 10px;
+                  font-size:12px;text-decoration:none">
+          🗑 Delete
+        </a>
+      </div>
+
+    </div>
+  </div>
+  {% endfor %}
+
+  {% if not rooms %}
+  <div class="col-12">
+    <div class="panel p-5 text-center" style="color:var(--muted)">
+      <div style="font-size:3rem;margin-bottom:12px">🚪</div>
+      <h5>No rooms added yet</h5>
+      <p>Click "+ Add Room" to get started.</p>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Add Room Modal -->
+<div class="modal fade" id="addRoomModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add New Room</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="{{ url_for('add_room') }}" method="POST" id="addRoomForm">
+        <div class="modal-body row g-3">
+
+          <div class="col-6">
+            <label class="form-label">Room Number</label>
+            <input name="room_number" class="form-control"
+                   placeholder="e.g. 101"
+                   required
+                   oninput="this.value=this.value.replace(/[^0-9a-zA-Z]/g,'')">
+            <div id="room_num_error"
+                 style="font-size:11px;color:#ef4444;margin-top:4px;display:none">
+              ⚠ This room number already exists.
+            </div>
+          </div>
+
+          <div class="col-6">
+            <label class="form-label">Floor</label>
+            <input name="floor" type="number" class="form-control"
+                   placeholder="e.g. 1" min="1" max="20" required>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Capacity</label>
+            <input name="capacity" type="number" class="form-control"
+                   placeholder="e.g. 2" min="1" max="6" required>
+          </div>
+
+          <input type="hidden" name="room_type" value="double">
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary"
+                  data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" id="roomSubmitBtn" class="btn px-4"
+            style="background:linear-gradient(135deg,#6c63ff,#22d3b0);
+                   border:none;border-radius:9px;color:#fff;font-weight:500">
+            Add Room
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+  // Set room bar widths from data attribute
+document.querySelectorAll('.room-bar-fill').forEach(function(bar) {
+  bar.style.width = bar.getAttribute('data-width') + '%';
+});
+// Live room number duplicate check
+let roomCheckTimer = null;
+document.querySelector('input[name="room_number"]').addEventListener('input',
+  function() {
+    clearTimeout(roomCheckTimer);
+    const val   = this.value.trim();
+    const errEl = document.getElementById('room_num_error');
+    const btn   = document.getElementById('roomSubmitBtn');
+
+    if (!val) {
+      errEl.style.display = 'none';
+      btn.disabled = false;
+      return;
+    }
+
+    roomCheckTimer = setTimeout(() => {
+      fetch(`/check_room?room_number=${encodeURIComponent(val)}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.exists) {
+            errEl.style.display = 'block';
+            btn.disabled = true;
+          } else {
+            errEl.style.display = 'none';
+            btn.disabled = false;
+          }
+        });
+    }, 400);
+  }
+);
+</script>
+
+{% endblock %}

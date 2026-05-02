@@ -1,0 +1,586 @@
+{% extends 'base.html' %}
+{% block page_title %}Students{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 style="font-family:'Sora',sans-serif;font-weight:700">Student Management</h4>
+  <button class="btn px-4" data-bs-toggle="modal" data-bs-target="#addStudentModal"
+    style="background:linear-gradient(135deg,#6c63ff,#22d3b0);border:none;
+           border-radius:10px;font-weight:500;color:#fff">
+    + Add Student
+  </button>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <div class="panel-title">All Students</div>
+    <span style="font-size:12px;color:var(--muted)">{{ students|length }} total</span>
+  </div>
+  <table class="hms-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Student</th>
+        <th>USN</th>
+        <th>Course</th>
+        <th>Room</th>
+        <th>Phone</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in students %}
+      <tr>
+        <td style="color:var(--muted)">{{ loop.index }}</td>
+        <td>
+          <div class="student-info">
+            <div class="student-av"
+              style="background:linear-gradient(135deg,#6c63ff,#22d3b0)">
+              {{ s.name[0] | upper }}
+            </div>
+            <div>
+              <div class="student-name">{{ s.name }}</div>
+              <div class="student-roll">{{ s.email or '—' }}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <code style="background:var(--bg3);padding:3px 8px;
+                       border-radius:6px;font-size:12px;color:#a78bfa">
+            {{ s.usn | upper }}
+          </code>
+        </td>
+        <td style="color:var(--muted);font-size:13px">
+          {{ s.course }} · Yr {{ s.year }}
+        </td>
+        <td>
+          <span class="room-chip">🚪 {{ s.room_number or '—' }}</span>
+        </td>
+        <td style="font-size:13px;color:var(--muted)">{{ s.phone }}</td>
+        <td>
+          <span class="badge
+            {% if s.status == 'active' %}badge-success{% else %}badge-gray{% endif %}">
+            {{ s.status }}
+          </span>
+        </td>
+        <td>
+          <div class="d-flex gap-1">
+            <!-- Edit Button -->
+            <button class="btn btn-sm"
+              style="background:rgba(108,99,255,0.1);color:#a78bfa;
+                     border:none;border-radius:7px"
+              onclick="openEditModal(
+                {{ s.id }},
+                '{{ s.name }}',
+                '{{ s.email or '' }}',
+                '{{ s.phone }}',
+                '{{ s.course }}',
+                {{ s.year }},
+                '{{ s.room_id or '' }}'
+              )"
+              title="Edit Student">
+              ✏ Edit
+            </button>
+            <!-- Delete Button -->
+            <a href="{{ url_for('delete_student', id=s.id) }}"
+               onclick="return confirm('Delete {{ s.name }}? This cannot be undone.')"
+               class="btn btn-sm"
+               style="background:rgba(239,68,68,0.1);color:#ef4444;
+                      border:none;border-radius:7px"
+               title="Delete Student">
+              🗑
+            </a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+      {% if not students %}
+      <tr>
+        <td colspan="8" class="text-center py-5" style="color:var(--muted)">
+          No students added yet. Click "+ Add Student" to get started.
+        </td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+<!-- ── Add Student Modal ──────────────────────────────────────────────────── -->
+<div class="modal fade" id="addStudentModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add New Student</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="{{ url_for('add_student') }}" method="POST"
+            id="addStudentForm">
+        <div class="modal-body">
+          <div class="row g-3">
+
+            <div class="col-md-6">
+              <label class="form-label">Full Name</label>
+              <input name="name" class="form-control"
+                     placeholder="e.g. Aryan Sharma" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">USN</label>
+              <div class="d-flex gap-2 mb-1">
+                <select id="usn_year" class="form-select"
+                        style="width:110px;flex-shrink:0">
+                  <option value="22">4NI22</option>
+                  <option value="23">4NI23</option>
+                  <option value="24" selected>4NI24</option>
+                  <option value="25">4NI25</option>
+                </select>
+                <select id="usn_branch" class="form-select"
+                        style="width:100px;flex-shrink:0">
+                  <option value="cs">CS</option>
+                  <option value="is">IS</option>
+                  <option value="ec">EC</option>
+                  <option value="ee">EE</option>
+                  <option value="ci">CI</option>
+                  <option value="me">ME</option>
+                  <option value="cv">CV</option>
+                </select>
+                <input id="usn_num" type="number" class="form-control"
+                       placeholder="001" min="1" max="999"
+                       style="width:90px;flex-shrink:0">
+              </div>
+              <input type="text" id="usn_preview" name="usn"
+                     class="form-control"
+                     placeholder="Auto-generated: 4ni24cs001"
+                     readonly required
+                     style="background:var(--bg3);color:#a78bfa;
+                            font-family:monospace;letter-spacing:1px">
+              <div id="usn_error"
+                   style="font-size:11px;color:#ef4444;
+                          margin-top:4px;display:none">
+                ⚠ This USN is already taken.
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input name="email" type="email" id="email_input"
+                     class="form-control"
+                     placeholder="e.g. student@college.edu"
+                     onblur="validateEmail(this)"
+                     oninput="clearEmailError()">
+              <div id="email_error"
+                   style="font-size:11px;color:#ef4444;
+                          margin-top:4px;display:none"></div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Phone (10 digits)</label>
+              <input name="phone" class="form-control"
+                     placeholder="9876543210"
+                     maxlength="10"
+                     oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                     required>
+              <div id="phone_error"
+                   style="font-size:11px;color:#ef4444;
+                          margin-top:4px;display:none"></div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Course</label>
+              <select name="course" class="form-select" id="course_select">
+                <option value="B.Tech CS">B.Tech Computer Science</option>
+                <option value="B.Tech IS">B.Tech Information Science</option>
+                <option value="B.Tech EC">B.Tech Electronics &amp; Comm.</option>
+                <option value="B.Tech EE">B.Tech Electrical Engg.</option>
+                <option value="B.Tech CI">B.Tech Civil Engg. (Infra)</option>
+                <option value="B.Tech ME">B.Tech Mechanical Engg.</option>
+                <option value="B.Tech CV">B.Tech Civil Engg.</option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Year</label>
+              <select name="year" class="form-select">
+                <option value="1">1st Year</option>
+                <option value="2">2nd Year</option>
+                <option value="3">3rd Year</option>
+                <option value="4">4th Year</option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Assign Room</label>
+              <select name="room_id" class="form-select" id="add_room_select">
+                <option value="">No Room</option>
+                {% for r in rooms %}
+                <option value="{{ r.id }}">
+                  {{ r.room_number }} ({{ r.room_type }})
+                  — {{ r.occupied }}/{{ r.capacity }}
+                </option>
+                {% endfor %}
+              </select>
+              <div id="room_error"
+                   style="font-size:11px;color:#ef4444;
+                          margin-top:4px;display:none">
+                ⚠ This room is full.
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary"
+                  data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" id="submitBtn" class="btn px-4"
+            style="background:linear-gradient(135deg,#6c63ff,#22d3b0);
+                   border:none;border-radius:9px;color:#fff;font-weight:500">
+            Add Student
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ── Edit Student Modal ─────────────────────────────────────────────────── -->
+<div class="modal fade" id="editStudentModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">✏ Edit Student / Shift Room</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="editStudentForm" method="POST">
+        <div class="modal-body">
+          <div class="row g-3">
+
+            <div class="col-md-6">
+              <label class="form-label">Full Name</label>
+              <input name="name" id="edit_name" class="form-control" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input name="email" type="email" id="edit_email"
+                     class="form-control"
+                     placeholder="e.g. student@college.edu">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Phone (10 digits)</label>
+              <input name="phone" id="edit_phone" class="form-control"
+                     maxlength="10"
+                     oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                     required>
+              <div id="edit_phone_error"
+                   style="font-size:11px;color:#ef4444;
+                          margin-top:4px;display:none">
+                ⚠ Phone must be exactly 10 digits.
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Course</label>
+              <select name="course" id="edit_course" class="form-select">
+                <option value="B.Tech CS">B.Tech Computer Science</option>
+                <option value="B.Tech IS">B.Tech Information Science</option>
+                <option value="B.Tech EC">B.Tech Electronics &amp; Comm.</option>
+                <option value="B.Tech EE">B.Tech Electrical Engg.</option>
+                <option value="B.Tech CI">B.Tech Civil Engg. (Infra)</option>
+                <option value="B.Tech ME">B.Tech Mechanical Engg.</option>
+                <option value="B.Tech CV">B.Tech Civil Engg.</option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Year</label>
+              <select name="year" id="edit_year" class="form-select">
+                <option value="1">1st Year</option>
+                <option value="2">2nd Year</option>
+                <option value="3">3rd Year</option>
+                <option value="4">4th Year</option>
+              </select>
+            </div>
+
+            <div class="col-md-9">
+              <label class="form-label">
+                🚪 Assign / Shift Room
+                <span style="font-size:11px;color:var(--muted);font-weight:400">
+                  — changing this will shift the student to the new room
+                </span>
+              </label>
+              <select name="room_id" id="edit_room_id" class="form-select">
+                <option value="">No Room</option>
+                {% for r in rooms %}
+                <option value="{{ r.id }}">
+                  {{ r.room_number }} ({{ r.room_type }})
+                  — {{ r.occupied }}/{{ r.capacity }}
+                </option>
+                {% endfor %}
+              </select>
+              <div id="edit_room_error"
+                   style="font-size:11px;color:#ef4444;
+                          margin-top:4px;display:none">
+                ⚠ This room is full. Please choose another.
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary"
+                  data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn px-4"
+            style="background:linear-gradient(135deg,#6c63ff,#22d3b0);
+                   border:none;border-radius:9px;color:#fff;font-weight:500">
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+
+// ── Open Edit Modal ────────────────────────────────────────────────────────
+function openEditModal(id, name, email, phone, course, year, roomId) {
+  document.getElementById('edit_name').value   = name;
+  document.getElementById('edit_email').value  = email;
+  document.getElementById('edit_phone').value  = phone;
+  document.getElementById('edit_year').value   = year;
+
+  // Set course
+  const courseEl = document.getElementById('edit_course');
+  for (let opt of courseEl.options) {
+    if (opt.value === course) { opt.selected = true; break; }
+  }
+
+  // Set room
+  const roomEl = document.getElementById('edit_room_id');
+  for (let opt of roomEl.options) {
+    if (opt.value == roomId) { opt.selected = true; break; }
+  }
+
+  // Set form action
+  document.getElementById('editStudentForm').action =
+    '/students/edit/' + id;
+
+  // Show modal
+  new bootstrap.Modal(document.getElementById('editStudentModal')).show();
+}
+
+// ── Edit room full check ───────────────────────────────────────────────────
+document.getElementById('edit_room_id').addEventListener('change', function() {
+  const errEl   = document.getElementById('edit_room_error');
+  const text    = this.options[this.selectedIndex].text;
+  const match   = text.match(/(\d+)\/(\d+)/);
+  if (match) {
+    const occupied = parseInt(match[1]);
+    const capacity = parseInt(match[2]);
+    if (occupied >= capacity) {
+      errEl.style.display = 'block';
+    } else {
+      errEl.style.display = 'none';
+    }
+  } else {
+    errEl.style.display = 'none';
+  }
+});
+
+// ── Edit phone validation ──────────────────────────────────────────────────
+document.getElementById('edit_phone').addEventListener('input', function() {
+  const errEl = document.getElementById('edit_phone_error');
+  if (this.value.length > 0 && this.value.length !== 10) {
+    errEl.style.display = 'block';
+  } else {
+    errEl.style.display = 'none';
+  }
+});
+
+// ── Email validation ───────────────────────────────────────────────────────
+function clearEmailError() {
+  document.getElementById('email_error').style.display = 'none';
+  checkSubmitReady();
+}
+
+let emailCheckTimer = null;
+function validateEmail(input) {
+  const val   = input.value.trim();
+  const errEl = document.getElementById('email_error');
+  const btn   = document.getElementById('submitBtn');
+
+  if (val.length === 0) {
+    errEl.style.display = 'none';
+    checkSubmitReady();
+    return;
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(val)) {
+    errEl.textContent = '⚠ Enter a valid email like student@gmail.com';
+    errEl.style.display = 'block';
+    btn.disabled = true;
+    return;
+  }
+
+  clearTimeout(emailCheckTimer);
+  emailCheckTimer = setTimeout(() => {
+    fetch(`/check_email?email=${encodeURIComponent(val)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.exists) {
+          errEl.textContent = '⚠ This email is already registered.';
+          errEl.style.display = 'block';
+          btn.disabled = true;
+        } else {
+          errEl.style.display = 'none';
+          checkSubmitReady();
+        }
+      });
+  }, 400);
+}
+
+// ── USN Builder ────────────────────────────────────────────────────────────
+function buildUSN() {
+  const year   = document.getElementById('usn_year').value;
+  const branch = document.getElementById('usn_branch').value;
+  const num    = document.getElementById('usn_num').value;
+  if (num) {
+    const padded = String(num).padStart(3, '0');
+    document.getElementById('usn_preview').value =
+      `4ni${year}${branch}${padded}`;
+    checkUSN();
+  } else {
+    document.getElementById('usn_preview').value = '';
+    document.getElementById('submitBtn').disabled = true;
+  }
+}
+
+document.getElementById('usn_branch').addEventListener('change', function() {
+  const map = {
+    cs: 'B.Tech CS', is: 'B.Tech IS', ec: 'B.Tech EC',
+    ee: 'B.Tech EE', ci: 'B.Tech CI', me: 'B.Tech ME', cv: 'B.Tech CV'
+  };
+  const courseEl = document.getElementById('course_select');
+  for (let opt of courseEl.options) {
+    if (opt.value === map[this.value]) { opt.selected = true; break; }
+  }
+  buildUSN();
+});
+
+document.getElementById('usn_year').addEventListener('change', buildUSN);
+document.getElementById('usn_num').addEventListener('input', buildUSN);
+
+// ── USN duplicate check ────────────────────────────────────────────────────
+let usnCheckTimer = null;
+function checkUSN() {
+  clearTimeout(usnCheckTimer);
+  const usn = document.getElementById('usn_preview').value;
+  if (!usn) return;
+  usnCheckTimer = setTimeout(() => {
+    fetch(`/check_usn?usn=${usn}`)
+      .then(r => r.json())
+      .then(data => {
+        const errEl = document.getElementById('usn_error');
+        if (data.exists) {
+          errEl.style.display = 'block';
+          document.getElementById('submitBtn').disabled = true;
+        } else {
+          errEl.style.display = 'none';
+          checkSubmitReady();
+        }
+      });
+  }, 400);
+}
+
+// ── Phone validation ───────────────────────────────────────────────────────
+document.querySelector('input[name="phone"]').addEventListener('input',
+  function() {
+    const errEl = document.getElementById('phone_error');
+    this.value  = this.value.replace(/[^0-9]/g, '');
+    if (this.value.length > 0 && this.value.length !== 10) {
+      errEl.textContent   = '⚠ Phone must be exactly 10 digits.';
+      errEl.style.display = 'block';
+    } else {
+      errEl.style.display = 'none';
+    }
+    checkSubmitReady();
+  }
+);
+
+// ── Room full check ────────────────────────────────────────────────────────
+document.getElementById('add_room_select').addEventListener('change',
+  function() {
+    const errEl = document.getElementById('room_error');
+    const text  = this.options[this.selectedIndex].text;
+    const match = text.match(/(\d+)\/(\d+)/);
+    if (match) {
+      const occupied = parseInt(match[1]);
+      const capacity = parseInt(match[2]);
+      if (occupied >= capacity) {
+        errEl.style.display = 'block';
+        document.getElementById('submitBtn').disabled = true;
+      } else {
+        errEl.style.display = 'none';
+        checkSubmitReady();
+      }
+    } else {
+      errEl.style.display = 'none';
+      checkSubmitReady();
+    }
+  }
+);
+
+// ── Master submit readiness ────────────────────────────────────────────────
+function checkSubmitReady() {
+  const errors = [
+    document.getElementById('usn_error'),
+    document.getElementById('email_error'),
+    document.getElementById('phone_error'),
+    document.getElementById('room_error')
+  ];
+  const anyError = errors.some(el =>
+    el && el.style.display === 'block'
+  );
+  document.getElementById('submitBtn').disabled = anyError;
+}
+
+// ── Final submit validation ────────────────────────────────────────────────
+document.getElementById('addStudentForm').addEventListener('submit',
+  function(e) {
+    const phone = document.querySelector('input[name="phone"]').value;
+    const usn   = document.getElementById('usn_preview').value;
+    const email = document.getElementById('email_input').value;
+
+    if (phone.length !== 10) {
+      e.preventDefault();
+      document.getElementById('phone_error').textContent =
+        '⚠ Phone must be exactly 10 digits.';
+      document.getElementById('phone_error').style.display = 'block';
+      return;
+    }
+    if (!usn) {
+      e.preventDefault();
+      alert('Please complete the USN — select year, branch and enter a number.');
+      return;
+    }
+    if (email.length > 0) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        e.preventDefault();
+        document.getElementById('email_error').textContent =
+          '⚠ Enter a valid email like student@gmail.com';
+        document.getElementById('email_error').style.display = 'block';
+        return;
+      }
+    }
+  }
+);
+
+</script>
+{% endblock %}
